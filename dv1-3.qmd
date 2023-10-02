@@ -11,6 +11,7 @@ editor: visual
 ## Question 1
 
 ```{r}
+#! message: false
 library(tidyverse)
 # Read in the data 
 exercise_data <- read_csv("https://raw.githubusercontent.com/vaiseys/dav-course/main/Data/visualize_data.csv")
