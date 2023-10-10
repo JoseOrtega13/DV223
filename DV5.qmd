@@ -1,0 +1,158 @@
+---
+title: "DV5"
+format: html
+editor: visual
+embed-resources: true
+---
+
+## 
+
+```{r}
+library(tidyverse)
+# Read in the data 
+wncaa <- read_csv("https://raw.githubusercontent.com/vaiseys/dav-course/main/Data/wncaa.csv")
+
+# Glimpse the data 
+glimpse(wncaa)
+```
+
+## Question 1
+
+```{r}
+champions <- wncaa |> 
+  filter(tourney_finish == "Champ")
+```
+
+```{r}
+percent_wins <- champions |> 
+  group_by(school) |> 
+  summarise(N = n()) |> 
+  mutate(percent = N / sum(N), 
+         pct = round((percent*100), 0))
+  
+percent_wins
+```
+
+```{r}
+ggplot(percent_wins, 
+       mapping = aes(x = school, 
+                     y = pct)) + 
+  geom_col(position = "dodge2", fill = "blue") +
+  scale_y_continuous(limits = c(0, 100)) +
+  coord_flip() + 
+  labs(title = "Tournaments won by school %", x = "College", y = "Win % in tournament", caption = "source: WNCAA")
+
+
+```
+
+I see most colleges have a tournament win percentage below at or below 15%. The two with the highest percentages are UConn and Tennessee.
+
+## Question 2
+
+```{r}
+champ_names <- unique(champions$school)
+```
+
+```{r}
+winners <- wncaa %>% 
+  filter(school %in% champ_names)
+```
+
+```{r}
+ggplot(winners, 
+       mapping = aes(x = school, 
+                     y = seed, 
+                     fill = school)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = 0.2) +
+  coord_flip() +
+  labs(title = "Distribution of Seeds by School", x = "School", y = "Seed", caption = "source: WNCAA")
+```
+
+```{r}
+winners <- winners |>   
+  group_by(school) %>%  
+  mutate(mean_seed = mean(seed)) %>% 
+  ungroup()
+```
+
+```{r}
+ggplot(winners, 
+       aes(x = reorder(school, -mean_seed), y = seed, fill = school)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(alpha = 0.3) +
+  coord_flip() +
+  labs(title = "Distribution of Seeds by School", x = "School", y = "Seed", caption = "source: WNCAA")
+
+
+```
+
+The IQR of seeds increases as the average seed increases within the data. Tennessee and UConn have many points at seed 1 as they have the most championships.
+
+```{r}
+ggplot(winners, 
+       aes(x = reorder(school, -mean_seed), y = seed, fill = school)) +
+  geom_violin() +
+  coord_flip() +
+  labs(title = "Distribution of Seeds by School", x = "School", y = "Seed", caption = "source: WNCAA")
+```
+
+Personally, I prefer the box plots as it's easier to understand and read visually. The geom_violin is useful, but hard to see differences when there is slight curves or very minimal change.
+
+## Question 3
+
+```{r}
+ggplot(winners, 
+       aes(x = reorder(school, -mean_seed), y = seed, fill = school)) +
+  geom_point() +
+  geom_jitter(alpha = 0.5) +
+  coord_flip() +
+  labs(title = "Distribution of Seeds by School", x = "School", y = "Seed", caption = "source: WNCAA")
+```
+
+Using geom_point here makes it difficult to see the median or IQR points. It is very hard to see the individual data per school and how it varies per seed. The only real visual I have is Tennessee and UConn have high distributions at the 1 seed.
+
+## Question 4
+
+```{r}
+winners_mean_sd <- winners |> 
+  group_by(school) |> 
+  summarize(across(where(is.numeric),
+                   list(mean = mean,
+                        sd = sd)))
+```
+
+```{r}
+ggplot(winners_mean_sd,
+        mapping = aes(x = reorder(school, reg_percent_mean, na.rm = TRUE),
+                      y = reg_percent_mean)) +
+  geom_point() +
+  coord_flip() +
+  labs(title = "Regular Season Win Percentage by School", x = "School", y = "Average Regular Season Win Percentage", caption = "source: WNCAA")
+```
+
+The school with the lowest regular season win percentage is Texas A&M as seen in the data and the school with the highest is UConn. Most school seem to be between 75-80% and only a select few above 80%.
+
+```{r}
+ggplot(winners_mean_sd,
+        mapping = aes(x = reorder(school, reg_percent_mean, na.rm = TRUE),
+                      y = reg_percent_mean)) +
+  geom_pointrange(mapping = aes(ymin = reg_percent_mean - reg_percent_sd,
+       ymax = reg_percent_mean + reg_percent_sd)) +
+  coord_flip() +
+  labs(title = "Regular Season Win Percentage by School", x = "School", y = "Average Regular Season Win Percentage", caption = "source: WNCAA")
+```
+
+Texas A&M had the narrowest interval, which means that they had the least variation in win percentage in the regular season alongside the winning schools.
+
+```{r}
+ggplot(winners_mean_sd,
+        mapping = aes(x = reorder(school, reg_percent_mean, na.rm = TRUE),
+                      y = reg_percent_mean)) +
+  geom_linerange(mapping = aes(ymin = reg_percent_mean - reg_percent_sd,
+       ymax = reg_percent_mean + reg_percent_sd)) +
+  coord_flip() +
+  labs(title = "Regular Season Win Percentage by School", x = "School", y = "Average Regular Season Win Percentage", caption = "source: WNCAA")
+```
+
+I don't think it's a great idea because you can not see the mean regular season win percentage. You can see the variability, but overall, it does not help with specific data.
