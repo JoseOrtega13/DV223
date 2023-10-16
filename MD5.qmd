@@ -1,0 +1,251 @@
+---
+title: "MD5"
+format: html
+editor: visual
+embed-resources: true
+---
+
+```{r}
+library(tidyverse)
+
+twitch_data <- read_csv("https://raw.githubusercontent.com/vaiseys/dav-course/main/Data/twitchdata-update.csv")
+```
+
+## MD 5
+
+```{r}
+library(janitor)
+twitch_data <- clean_names(twitch_data)
+
+# Inspect new names
+colnames(twitch_data)
+```
+
+## Question 1
+
+```{r}
+evals_twitchdata <- twitch_data %>%
+  select(average_viewers, followers) 
+glimpse(evals_twitchdata)
+```
+
+```{r}
+evals_twitchdata <- twitch_data |> 
+  sample_n(size = 5) |> 
+  select(channel, average_viewers, followers)
+
+evals_twitchdata
+```
+
+I see that the more average viewers does not necessarily lead to more followers, but the one's that have more average views will generally have more followers.
+
+```{r}
+q1 <- twitch_data |> 
+  select(channel, average_viewers, followers)
+
+summary(q1)
+```
+
+The mean is 4781 for average viewers and 570054 for followers while the median is 2425 for average viewers and 318063 for followers. This captured my attention because the mean is bigger than the median for both, so it tells me that there may be a variety of different numbers ranging from high to middle.
+
+```{r}
+ggplot(twitch_data, 
+       mapping = aes(x = followers, 
+                     y = average_viewers)) +
+  geom_jitter(alpha = 0.3) +
+  labs(title = "Average Viewers vs Followers among Twitch Streamers", caption = "Source: twitch_data", x = "followers", y = "average viewers")
+```
+
+There is a hot spot near the origin and only a few outliers who are the more famous content creators. Majority are low-low.
+
+```{r}
+ggplot(twitch_data, 
+       mapping = aes(x = followers, 
+                     y = average_viewers)) +
+  geom_jitter(alpha = 0.3) +
+  labs(title = "Average Viewers vs Followers among Twitch Streamers", caption = "Source: twitch_data", x = "log10 of followers", y = "log10 of average viewers") +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+This helps see the positive relationship between the two and not as many outliers.
+
+```{r}
+twitch_data <- twitch_data %>% 
+  mutate(log_viewers = log10(average_viewers), 
+         log_followers = log10(followers))
+```
+
+## Question 2
+
+```{r}
+fit1 <- lm(log_viewers ~ log_followers,
+           data = twitch_data)
+
+broom::tidy(fit1)
+
+
+```
+
+```{r}
+fit1
+#/ followers is the independent variable and viewers is the dependent variable!
+```
+
+\$\$1.1\^{0.59} = 1.0578 \$\$
+
+I see that when there is a 10% increase in followers, there is expected 5.78% increase in average viewers.
+
+## Question 3
+
+```{r}
+library(broom)
+
+pred_data <- augment(fit1)
+
+# glimpse our new data 
+glimpse(pred_data)
+```
+
+```{r}
+pred_data %>% 
+  ggplot(aes(x = log_followers, 
+             y = log_viewers)) +
+  geom_jitter(alpha = 0.4) + 
+  geom_line(aes(x = log_followers, 
+                y = .fitted), 
+            col = "orange") + 
+  theme_minimal() +
+  labs(subtitle = "Fitted Model and Raw Data", 
+       title = "Followers & Average Viewership", 
+       x = "log(followers)", 
+       y = "log(viewers)")
+```
+
+This helps visualize the upward, positive relationship between the two.
+
+```{r}
+pred_data |> 
+  ggplot(aes(x = log_followers, 
+             y = .resid)) +
+  geom_jitter(alpha = 0.4) + 
+  theme_minimal() +
+  labs(subtitle = "Residual Plot from log_viewers vs log_followers", 
+       title = "Residual Plot", 
+       x = "log(followers)", 
+       y = "Residuals", 
+       caption = "Source: twitch_data")
+```
+
+This shows the distance from each point to the model on the other graph. Most residuals are around 0 with some outliers above 1 and below -1, but it is not often so it is a good fit.
+
+## Question 4
+
+```{r}
+lang <- twitch_data |> 
+  select(channel, language, average_viewers)
+
+lang
+
+
+```
+
+```{r}
+lang |>  
+  sample_n(size = 25) 
+```
+
+Here, I see that English language is more consistent with more average viewers, but that is not a concrete fact. We can see the popular Turkish yet also not popular Korean.
+
+```{r}
+summary(lang)
+```
+
+```{r}
+ggplot(lang, 
+       mapping = aes(x = language, 
+                     fill = language)) +  geom_bar() + coord_flip() +
+  labs(title = "Number of Twitch Channels by Language", caption = "Source: twitch_data")
+
+```
+
+```{r}
+ggplot(lang, 
+       aes(x = average_viewers)) +
+  geom_histogram(binwidth = 5000) +
+  labs(title = "Average Viewers of Twitch Channels", x = "average viewers", caption = "Source: twitch_data") 
+
+
+```
+
+```{r}
+ggplot(lang, 
+       mapping = aes(x = language, 
+                     y = average_viewers, 
+                     color = language)) + 
+  geom_jitter(alpha = 0.6) + 
+  coord_flip() +
+  labs(title = "Average Viewers of Twitch Channels by Language", x = "language", y = "average viewers", caption = "Source: twitch_data") 
+```
+
+Here, we can see that English streamers do generally dominate the average viewers. Some languages have occasional outliers like Russian and English. It makes me believe that it probably has to do with the culture and whether streaming is popular wherever the stream takes place.
+
+## Question 5
+
+```{r}
+twitch_data <- twitch_data %>% 
+  mutate(language = as.factor(language), 
+         language = relevel(language, ref = "English"))
+
+```
+
+```{r}
+fit2 <- lm(average_viewers ~ language,
+           data = lang)
+
+broom::tidy(fit2)
+```
+
+```{r}
+fit2
+#/ followers is the independent variable and viewers is the dependent variable!
+
+
+```
+
+```{r}
+twitch_data |> 
+  summarize(standard_deviation = sd(average_viewers, na.rm = TRUE))
+
+
+```
+
+Spanish, Arabic, and Russian all have more average viewers than the English language. There are more negative coefficients than positive and we can see from the standard deviation that the prediction is right so far.
+
+## Question 6
+
+```{r}
+library(broom)
+
+yes <- augment(fit2)
+
+# glimpse our new data 
+glimpse(yes)
+```
+
+```{r}
+ggplot(yes, 
+       aes(x = average_viewers, 
+           y = .resid)) +
+  geom_jitter(alpha = 0.4) + 
+  geom_smooth(method = lm) +
+  theme_minimal() +
+  labs(subtitle = "Residual Plot from average_viewers vs language", 
+       title = "Fitted Model and Raw Data", 
+       x = "Average Viewers", 
+       y = "Residuals", 
+       caption = "Source: twitch_data") +
+  scale_x_log10()
+```
+
+Our model missed the two points above that are separated called dota2ti and dota2ti_ru. The first is English and the second is Russian.
