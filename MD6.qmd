@@ -1,0 +1,136 @@
+---
+title: "MD6"
+format: html
+editor: visual
+embed-resources: true
+---
+
+## MD6
+
+```{r}
+library(tidyverse)
+# Set our ggplot theme from the outset
+theme_set(theme_light())
+# Read in the data 
+gender_employment <- read_csv("https://raw.githubusercontent.com/vaiseys/dav-course/main/Data/gender_employment.csv")
+
+# Glimpse at the data 
+glimpse(gender_employment)
+```
+
+```{r}
+#| warning: false
+gender_employment%>% 
+  ggplot(aes(x = year, y = wage_percent_of_male)) +
+  geom_jitter(alpha = 0.1) + 
+  geom_smooth(method = "lm") + 
+  labs(title = "Women's earnings with respect to men's", 
+       y = "% of Men's Income", 
+       x = "Year")
+```
+
+## Question 1
+
+```{r}
+gender_employment <- gender_employment %>% 
+  mutate(major_category = as.factor(major_category), 
+         major_category = relevel(major_category, ref = "Management, Business, and Financial"))
+
+```
+
+```{r}
+parallel_model <- lm(wage_percent_of_male ~ year + major_category,
+                     data = gender_employment)
+broom::tidy(parallel_model)
+```
+
+Looking at the data, I see that the every year the wage percentage of male increases by a 0.192 % point.
+
+{y} = -306.7183854 + 0.1922095(\\text{year}) + 6.3194352(\\text{CES}) + 5.7562764(\\text{ELCSAM}) + 5.5209507(\\text{HPT}) + 4.9146651(\\text{NRCM}) - 1.3112146(\\text{PTMM}) + 3.3261175(\\text{SO}) + 6.0769722(\\text{S})\$\$
+
+{y} = -306.7183854 + 0.1922095(2015) + 3.3261175(1) = 83.90987
+
+In 2015, the Sales and Office occupations hit 93.91% male income.
+
+{y} = -306.7183854 + 0.1922095(2016) + 6.08(1) = 86.85597
+
+In 2016, the Service occupations had 86.86% of male income
+
+## Question 2
+
+```{r}
+#| warning: false
+gender_employment%>% 
+  ggplot(aes(x = year,
+             y = wage_percent_of_male,
+             group = major_category)) +
+  geom_smooth(method = "lm",
+              se = FALSE) + 
+  labs(title = "Women's earnings with respect to men's", 
+       y = "% of Men's Income", 
+       x = "Year")
+```
+
+We cannot use this parallel trends assumption because of the discrepancy across industrial categories.
+
+## Question 3
+
+```{r}
+interaction_model <- lm(wage_percent_of_male ~ year*major_category,
+                        data = gender_employment)
+broom::tidy(interaction_model)
+```
+
+{y} = -1370.4719187 + 0.7202561(2016) + 1002.8532317(1) - 0.4946783(2016)(1) = 87.14616
+
+In 2016, the CES is 87.15% of male income.
+
+{y} = -1370.4719187 + 0.7202561(2016) + 2137.6501474(1) - 1.0581075(2016)(1) = 86.06981
+
+In 2016, Service jobs made 86.07% of male income. The main difference requires two switches instead of just one in the previous model.
+
+## Question 4
+
+A model that assumes parallel trends can help when there is not enough data as the results would be variable and not very accurate. Also, it can help using a baseline model for the data set.
+
+## Question 5
+
+```{r}
+simple_fit <- lm(wage_percent_of_male ~ year,
+                 data = gender_employment)
+broom::tidy(simple_fit)
+```
+
+Every year that increases, the wage percent of male increases by 0.2% points.
+
+```{r}
+gender_employment %>% 
+  select(year, wage_percent_of_male, percent_female) %>% 
+  cor(use = "complete.obs")
+```
+
+The wage percent of male increases by 0.24% points per year while the percent female increases by 0.005 of one percentage points per year.
+
+```{r}
+multiple_fit <- lm(wage_percent_of_male ~ year*percent_female,
+                   data = gender_employment)
+broom::tidy(multiple_fit)
+```
+
+This is not what I expected. I did expect to see the percent of women working in an occupation to be growing at 10% points per year. I expected this number to be lower, so this data is very useful and interesting.
+
+## Question 6
+
+R squared tells us how much variation there is of the dependent explained by the independent variable in the model we have.
+
+```{r}
+simple_glanced <- broom::glance(simple_fit)
+simple_glanced$r.squared
+```
+
+```{r}
+multiple_glanced <- broom::glance(multiple_fit)
+multiple_glanced$r.squared
+```
+
+R squared is larger in the multiple regression. We can derive from this that there is a larger amount of the dependent variable that relies on the independent variable, which makes it the appropriate fit for this relationship between year and percentage_female.
