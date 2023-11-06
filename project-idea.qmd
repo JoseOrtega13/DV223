@@ -1,0 +1,8 @@
+---
+title: "final data"
+format: html
+editor: visual
+embed-resources: true
+---
+
+Could not really find a specific data set I want for my topic but checked this suggested website and found some potential options, but nothing exactly yet. I plan on researching the most effective place strikers score goals from in the English Premier League. I'll find a data set with all the goals from the EPL in a season then narrow it down to the most specific areas.
