@@ -1,0 +1,184 @@
+---
+title: "HW 8-9"
+format: html
+editor: visual
+embed-resources: true
+---
+
+## CH8
+
+```{r}
+#| message: false
+library(tidyverse)
+library(here)
+library(moderndive)
+library(infer)
+theme_set(theme_minimal())
+```
+
+## **Question 1**
+
+```{r}
+set.seed(1108)
+
+poll <- tibble(
+  vote_gop = rbinom(n = 1000,
+                    size = 1,
+                    prob = .53))
+```
+
+```{r}
+# Bootstrap resampling
+set.seed(1108)  # Setting seed for reproducibility
+bootstrap_dist <- poll %>%
+  rep_sample_n(size = nrow(poll), replace = TRUE, reps = 1000) %>%
+  group_by(replicate) %>%
+  summarize(mean_vote = mean(vote_gop))
+```
+
+```{r}
+# Calculating 95% Confidence Interval
+ci_firstmeth <- quantile(bootstrap_dist$mean_vote, c(.025, .975))
+print(ci_firstmeth)
+```
+
+Based off the results of the first method, I got a percentage-based confidence interval of (0.483975, 0.548000)
+
+```{r}
+# Infer approach
+set.seed(1108)  # Setting seed for reproducibility
+
+ci_secondmeth <- poll %>%
+  specify(response = vote_gop) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean") %>%
+  get_ci(level = 0.95, type = "percentile")
+
+print(ci_secondmeth)
+```
+
+Based off the results of the second method, pictured above, I got a percentage-based interval of (0.483975, 0.548)
+
+The two confidence intervals match perfectly. If you change the seed value, the confidence intervals will differ because altering the seed affects how the computer generates randomness while sampling.
+
+## History of Rap
+
+```{r}
+rap_poll <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-04-14/polls.csv")
+```
+
+```{r}
+best_songs <- rap_poll %>% 
+  filter(rank == 1)
+```
+
+## Question 2
+
+```{r}
+year_songs <- ggplot(best_songs,
+                aes(x = year)) +
+  geom_histogram(binwidth = 1,
+                 center = 0) +
+  labs(title = "Release Year of Critics' #1 Favorite Rap Songs",
+       x = "Release Year",
+       y = "Number of Songs")
+year_songs
+```
+
+The year with the most commonly named favorite track was 1994 with 14 critics rating their #1 song that year, as seen on the graph above. 1992 was a close second place.
+
+## Question 3
+
+```{r}
+set.seed(3)
+boot_3 <- best_songs %>% 
+  specify(response = year) %>% 
+  generate(reps = 1000, type = "bootstrap") %>% 
+  calculate(stat = "mean")
+```
+
+```{r}
+confidence_interval <- boot_3 %>% 
+  get_ci(level = 0.95, type = "percentile")
+print(confidence_interval)
+```
+
+The lower bound is the year 1993 and the upper bound is the year 1996.
+
+## Question 4
+
+```{r}
+set.seed(3)
+boot_33 <- rap_poll %>% 
+  rep_sample_n(size = 25, reps = 1000, replace = TRUE) %>% 
+  group_by(replicate) %>% 
+  summarize(mean_year = mean(year))
+```
+
+```{r}
+ci_25 <- quantile(boot_33$mean_year, c(.025, .975))
+print(ci_25)
+```
+
+The lower bound here is the year 1995 and the upper bound is the year 2002. Here we can see the greater separation compared to the first critics' bounds.
+
+## CH9
+
+```{r}
+pl_data <- read_csv("https://raw.githubusercontent.com/vaiseys/dav-course/main/Data/premier_league.csv")
+glimpse(pl_data)
+```
+
+## Question 5
+
+```{r}
+home_wins <- pl_data %>% 
+  filter(result == "hw")
+home_wins_prop <- nrow(home_wins) / nrow(pl_data)
+print(home_wins_prop)
+```
+
+The proportion of home wins during the 2015/16 season in the EPL was 41.3% or 0.4131579.
+
+## Question 6
+
+```{r}
+set.seed(22)
+
+sampled_proportions <- c()
+
+for (i in 1:1000) {
+  
+  sampled_results <- sample(c("aw", "hw" , "d"), 
+                            size = 380,
+                            replace = TRUE, 
+                            prob = c(1/3,1/3,1/3))
+  prop <- sum(sampled_results == "hw")/380
+  sampled_proportions[i] <- prop
+  
+}
+```
+
+```{r}
+proportions_df <- data.frame(Proportion = sampled_proportions)
+```
+
+```{r}
+prop_graph <- ggplot(proportions_df,
+                            aes(x = Proportion)) + 
+  geom_histogram(binwidth = 0.01, boundary = 0.1, color = "white") +
+  labs(title = "Sample Proportions w/ Equal Probability Results",
+       x = "Proportion",
+       y = "# of Proportions")
+prop_graph
+```
+
+The histogram bears a strong resemblance to a normal distribution, which aligns with our expectation due to the Central Limit Theorem (CLT) as we gather a large number of samples. The distribution tends toward normality as per the CLT. The proportion observed in Question 5 exceeded significantly the sample proportions in Question 6. This aligns logically with real-world scenarios, where a home team winning is typically more probable than an away team winning. As they say...It's always hard to win away on a cold, rainy night at Stoke.
+
+## Question 7
+
+In this context, the null hypothesis states that there is no association between Home/Away status, suggesting that both the Home and Away teams win at an equivalent rate. Conversely, the alternative hypothesis suggests that there exists a discrepancy in winning rates between the Home and Away teams.
+
+## Question 8
+
+The p-value represents the probability that the observed proportion of home wins or an even more extreme proportion would occur assuming equal probabilities for all three potential outcomes. Visually, this corresponds to the shaded regions on both ends of the null distribution of home win proportions.
