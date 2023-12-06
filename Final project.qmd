@@ -1,0 +1,316 @@
+---
+title: "Final Project"
+format: html
+editor: visual
+embed-resources: true
+echo: false
+---
+
+## **Exploring the Impact of Socioeconomic Factors on Billionaire Wealth and Self-Made Status**
+
+by Jose Ortega
+
+12. 6\. 23.
+
+![](images/do-you-consider-these-billionaire-entrepreneurs-to-be-self-v0-ubhevl9x4nrb1.webp){width="284"}
+
+## 1. Introduction
+
+Living in a time period marked by the rapid accumulation of wealth and the glorification of entrepreneurial success, analyzing the impact of socioeconomic factors, specifically education enrollment, and how it relates to billionaire wealth and self-made status, seemed like something that sparked my interest. Within the project, exploratory data analysis will be performed to visualize trends and correlations between the factors and billionaire wealth/ self-made status.
+
+Some potential challenges to be faced in this project include handling missing or incomplete data for certain socioeconomic indicators and dealing with outliers in billionaire wealth or inconsistencies in self-made status classification. Obviously, there are some people around the world who live under the radar and do not record all their money, so our predictions will be used only from the data set we have included. My hypothesis for this project is that billionaires that grew up with better education, specifically with higher rates of tertiary education enrollment, will be more tied relationship wise. The data set I have selected is from this year (2023).
+
+## 2. Exploratory Data Analysis
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#| warning: false
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(tidyr)
+library(knitr)
+library(patchwork)
+library(ggthemes)
+library(moderndive)
+
+```
+
+```{r}
+#| warning: false
+#| message: false
+Billionaires_Statistics_Dataset <- read_csv("~/Desktop/Billionaires Statistics Dataset.csv")
+```
+
+We will be using from 2023 on billionaire wealth and socioeconomic factors related to each individual.
+
+```{r}
+#| warning: false
+#| message: false
+# Select top 50 billionaires
+top_50_billionaires <- Billionaires_Statistics_Dataset %>%
+  arrange(rank) %>%
+  slice(1:50)
+
+# Count the number of billionaires per country
+country_counts <- top_50_billionaires %>%
+  count(country) %>%
+  arrange(desc(n)) %>%
+  slice(1:10)
+
+top_50_filtered <- top_50_billionaires %>%
+  filter(country %in% country_counts$country)
+
+# Create a bar plot of the top 50 billionaires in the top 10 countries
+ggplot(top_50_filtered, aes(x = country , y = finalWorth, fill = country)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Country", y = "Total Final Worth (USD)", title = "The Most Common Nations Amongst the Top 50 Billionaires") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_fill_discrete(name = "Country")
+
+
+
+# Filter the top 50 billionaires to include only those from the top 10 countries
+```
+
+To narrow down the amount of billionaires within the data, we have looked at the top 50 billionaires and where the majority are from. We can see that the most popular countries are the United States, China, Hong Kong, India, the United Kingdom, Switzerland, Germany, and Thailand. This does not surprise me as they are all economically dominant and provide high levels of education. I would have maybe expected some more from Saudi Arabia and countries in the Middle East, but I assume it's hard to track the money of all the royal families and all the business done "under the table".
+
+With this is mind, I'm going to look at how the access to education plays a role in the top 50 billionaires. I will see to what extent education opportunities play a role in the likelihood of achieving billionaire status through self-made endeavors.
+
+## Education
+
+```{r}
+# Filter the top 50 billionaires
+#| warning: false
+#| message: FALSE
+top_50_billionaires <- Billionaires_Statistics_Dataset %>%
+  arrange(rank) %>%
+  slice(1:50)
+
+# Aggregate the average gross primary education enrollment for the top 10 countries
+top_countries_education <- top_50_billionaires %>%
+  group_by(countryOfCitizenship) %>%
+  summarise(avg_gross_primary_education = mean(gross_primary_education_enrollment_country, na.rm = TRUE)) %>%
+  top_n(10, avg_gross_primary_education)
+
+# Create the bar plot
+ggplot(top_countries_education, aes(x = reorder(countryOfCitizenship, avg_gross_primary_education), y = avg_gross_primary_education, fill = avg_gross_primary_education)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(x = "Country of Citizenship", y = "Average Gross Primary Education Enrollment", title = "Top 50 Billionaires by Average Gross Primary Education Enrollment") +
+  coord_flip() # Flip coordinates for horizontal bars
+
+```
+
+Starting from the very beginning in primary education can seem like a bit of a stretch as some might say that it won't play any role in whether someone becomes a billionaire or not, but in reality, every small detail matters in life and small things add up. The way one is raised and the habits instilled within one from a young age shapes us into our personality and transforms into our actions. The countries with the most amount of billionaires are in the top ten for gross primary enrollment, which can be attributed to their success.
+
+```{r}
+#| warning: false
+#| message: FALSE
+# Filter the top 50 billionaires
+top_50_billionaires <- Billionaires_Statistics_Dataset
+
+# Aggregate the gross tertiary education enrollment by country
+country_education_enrollment <- aggregate(gross_tertiary_education_enrollment ~ countryOfCitizenship, data = top_50_billionaires, sum)
+
+# Sort and get the top 10 countries by gross tertiary education enrollment
+top_10_education_enrollment <- country_education_enrollment[order(-country_education_enrollment$gross_tertiary_education_enrollment), ][1:10, ]
+
+# Create a bar plot
+ggplot(top_10_education_enrollment, aes(x = reorder(countryOfCitizenship, gross_tertiary_education_enrollment), y = gross_tertiary_education_enrollment, fill = countryOfCitizenship)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Country of Citizenship", y = "Total Gross Tertiary Education Enrollment", title = "Top 10 Tertiary Education Enrollment by Country for Top 50 Billionaires") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Here, I chose the gross tertiary education enrollment by country of the top 50 billionaires. The U.S. leads with the most enrollments, which correlates to the country having the most billionaires. Second comes China followed by Germany, Russia, and India. The interesting link is that the United States, China, and India are the top four for most Billionaires and top three in level of tertiary education enrollment. This explains the correlation between the two and how education in the collegiate and high school level plays a role in the likelihood of becoming a billionaire.
+
+## Residual Analysis
+
+```{r}
+#| warning: false
+#| message: FALSE
+# Filter the top 50 billionaires
+top_50_billionaires <- Billionaires_Statistics_Dataset
+
+# Fit a linear regression model
+model <- lm(finalWorth ~ gross_primary_education_enrollment_country + gross_tertiary_education_enrollment, data = top_50_billionaires)
+# Output the summary of the linear regression model
+
+```
+
+```{r}
+#| message: FALSE
+knitr::kable(get_regression_table(model))
+```
+
+Interpreting the residual table, we see the estimates for both primary and tertiary education enrollments. The Intercept is the estimated value of billionaires when all the predictor values are zero.
+
+When first looking at the Estimates, the Intercept (1841) represents the expected billionaire wealth when both education and enrollment variables are zero. The primary education estimate (7.305) we can infer that for one-unit increase in gross primary enrollment in a country, billionaire wealth increases by 7.305 units. The same goes for gross tertiary education enrollment when billionaire wealth increases by (9.515) units. The estimate remains that tertiary enrollment will have a greater effect on billionaire wealth.
+
+Now, observing the standard error for each, the primary education enrollment (11.925) suggests more uncertainty relating to the estimate since it is higher than the gross tertiary education enrollment standard error (2.663). This suggests a more precise estimation and less variability for predicting the gross tertiary education enrollment and how it affects billionaire wealth, which is estimated to be a higher percent.
+
+Looking at the T values helps us understand the predictor's effect on the dependent variable (billionaire wealth). First, the primary education t value (0.613) suggests that its effect on billionaire wealth is statistically insignificant since it lies in the 0's. The higher t value for tertiary education enrollment (3.573) suggests a more statistically significant effect on billionaire wealth.
+
+Finally, the high p-value of primary education enrollment (0.54) suggests that there is a high probability (54%) of observing the coefficient's t value if there were no effect of gross primary education enrollment on billionaire wealth. Conversely, for tertiary education enrollment there is a lower percentage (36%) of observing the estimated t value without the effect on billionaire wealth.
+
+## Linear Regression Analysis
+
+knitr::kable
+
+```{r}
+#| warning: false
+#| message: FALSE
+library(ggplot2)
+
+#| warning: false
+# Fit linear regression models
+lm_tertiary <- lm(finalWorth ~ gross_tertiary_education_enrollment, data = Billionaires_Statistics_Dataset)
+lm_primary <- lm(finalWorth ~ gross_primary_education_enrollment_country, data = Billionaires_Statistics_Dataset)
+
+# Create a combined plot for both regressions
+plot_tertiary <- ggplot(Billionaires_Statistics_Dataset, aes(x = gross_tertiary_education_enrollment, y = finalWorth)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "Tertiary Education Enrollment",
+       x = "Gross Tertiary Education Enrollment",
+       y = "Final Worth")
+
+plot_primary <- ggplot(Billionaires_Statistics_Dataset, aes(x = gross_primary_education_enrollment_country, y = finalWorth)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Primary Education Enrollment",
+       x = "Gross Primary Education Enrollment",
+       y = "Final Worth")
+
+# Combine the plots into one
+gridExtra::grid.arrange(plot_tertiary, plot_primary, ncol = 2)
+```
+
+Performing a linear regression model on the two variables that I analyzed above (primary education enrollment and tertiary education enrollment) and how it affects final worth of all the billionaires allows me the opportunity to interpret this data visually. The blue plot is associated with tertiary education and the red plot is associated with primary education. The goal remains to compare how different education levels relate to the final worth of the billionaires.
+
+The line of regression in both graphs will depict whether there is a positive or negative relationship between the education level enrollment and final worth. In the graph to the left we can see a positive relationship as opposed to the graph on the right where we see a slight negative relationship/ slope. This can be inferred as Gross Tertiary Education Enrollment having a positive effect in Billionaire Final Worth and Gross Primary Education Enrollment having no to little effect on Billionaire final worth.
+
+It can be seen as common to not enroll in primary education in some countries around the world, so that is a main reason for the little effect on final worth. The distribution of points around the regression line resemble a stronger association as we can see in the middle of both graphs. It gets more scattered as we reach higher final worth because of the scarcity in numbers.
+
+## 
+
+```{r}
+#| warning: false
+#| message: FALSE
+library(broom)
+
+model_tertiary_education_worth <- lm(finalWorth ~ gross_tertiary_education_enrollment, data = Billionaires_Statistics_Dataset)
+regression_table_tertiary_education_worth <- tidy(model_tertiary_education_worth)
+
+
+```
+
+```{r}
+#| message: FALSE
+knitr::kable(get_regression_table(model_tertiary_education_worth))
+```
+
+Here, our predictor variable is gross tertiary education enrollment and the coefficient is the estimated effect of primary education enrollment on billionaire wealth. The estimate of gross tertiary education enrollment (31.62455) tells us that if enrollment increases by one unit (1%) then billionaire wealth increases by (32%). The same goes if the enrollment decreases by a unit, billionaire wealth decreases by (32%).
+
+The standard error in terms of the linear regression model measures the uncertainty in the estimated coefficients of the predictors. The std error for our tertiary education enrollment is (9.544347) which means that our estimate in variability might fluctuate around 9-10 units. This is relatively low, which gives us more confidence with the estimate.
+
+The statistic, or t value, tells us the effect in size of the predictor value and the dependent variable. Here, there is a t value of (3.313432), which is not in the zeros or negative, so there is a strong relationship between gross tertiary education enrollment and billionaire wealth.
+
+Finally, our p-value is very low, less than 1%, which means that there is a high chance of our predictor value on the dependent variable is statistically significant.
+
+```{r}
+#| warning: false
+#| message: FALSE
+library(broom)
+
+model_primary_education_worth <- lm(finalWorth ~ gross_primary_education_enrollment_country, data = Billionaires_Statistics_Dataset)
+regression_table_primary_education_worth <- tidy(model_primary_education_worth)
+
+```
+
+```{r}
+#| message: FALSE
+knitr::kable(get_regression_table(model_primary_education_worth))
+```
+
+A negative estimate with the gross primary education enrollment dictates an inverse relationship with the predictor value and the dependent variable, where if one goes up, the other goes down by (19.09831).
+
+Our high standard error means that we will have high fluctuation, precisely by 43.31944 units. This is much more than tertiary education.
+
+We have a very low t value of (-0.4401789) which means that there could be a large effect between gross primary education enrollment and billionaire wealth. There is a weak relationship between the two.
+
+Finally our p value of (0.6598462) is relatively high and close to 1, which implies weak evidence and the relationship most likely to be random and not actually related.
+
+```{r}
+#| warning: false
+#| message: FALSE
+# Fit a linear model
+model <- lm(finalWorth ~ gross_primary_education_enrollment_country, data = Billionaires_Statistics_Dataset)
+
+# Calculate residuals
+residuals <- resid(model)
+
+# Create a dataframe for plotting
+plot_data <- data.frame(
+  Fitted = fitted(model),
+  Residuals = residuals
+)
+
+# Create a residual plot
+ggplot(plot_data, aes(x = Fitted, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
+  labs(x = "Fitted Values", y = "Residuals", title = "Residual Plot for Primary Education") +
+  theme_minimal()
+```
+
+Analyzing the residuals, I'm using "final worth" as my dependent variable and "gross primary education" as my independent variable from my data fame. Here, we van see the points all close together and not as scattered. They form almost a funnel shape, suggesting violations of assumptions or unequal variability. This is very different from the one we have below and suggests less positive relations.
+
+```{r}
+#| warning: false
+#| message: FALSE
+# Fit a linear model
+model <- lm(finalWorth ~ gross_tertiary_education_enrollment, data = Billionaires_Statistics_Dataset)
+
+# Calculate residuals
+residuals <- resid(model)
+
+# Create a dataframe for plotting
+plot_data <- data.frame(
+  Fitted = fitted(model),
+  Residuals = residuals
+)
+
+# Create a residual plot
+ggplot(plot_data, aes(x = Fitted, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
+  labs(x = "Fitted Values", y = "Residuals", title = "Residual Plot for Tertiary Education") +
+  theme_minimal()
+
+```
+
+For our residual plot for gross tertiary education enrollment, we have more scattered points along the zero residual line. There is less "errors" and "negative correlations" between the tertiary enrollment and billionaire wealth as depicted from the graph above.
+
+## Conclusions
+
+Based on all my analysis conducted, there appears to be a more significant impact on billionaire wealth with gross tertiary education enrollment rather than gross primary education enrollment. This does not mean that billionaires did not need to enroll in primary education or go to school before tertiary education, but rather, it suggests that there is a stronger relationship between those who enrolled in tertiary education and billionaire wealth. Obviously, in some countries, it is common to not enroll in education at a young age and wait until one is older, but the results come from the data.
+
+We had strong and positive relationships in the residuals and regression models with tertiary enrollment and inverse relationships or weaker confidence with the primary enrollment data. This leads us to conclude, along with all the other information, that gross tertiary education enrollment has a stronger influence on billionaire wealth.
+
+## Limitations
+
+Some potential limitations faced in this project are the accuracy of data and availability, establishing causation from correlation, repetitiveness in the samples selected, and interpretational bias based on my hypothesis. The project was conducted on the selected data set and focused on a smaller chunk to keep the thesis sharp and to the point rather than conducting analysis on multiple socioeconomic factors. This would have made things more complicated and more difficult to relate to each other.
+
+## Further Questions
+
+Doing this project interested me because of how prevalent money is today and the hype around all the billionaires in the world. I chose to relate it to school as it's my current state and I thought it would be great to see how education levels influence wealth status. I'd like to expand this analysis an look at all the billionaires and their grades in school. I hear many people talk about the billionaires being the crazy, poor grade, lazy students, so it would interesting to see how grades relate to wealth status.
+
+Additionally, branching out to other socioeconomic factors like areas of work, GDP of nation, economic opportunities, and age would be neat. Different factors could lead to different results, but I am very pleased in working with my topic.
+
+## Citations
+
+\"Billionaires Statistics Dataset (2023).\" Kaggle,
+
+https://www.kaggle.com/datasets/nelgiriyewithana/billionaires-statistics-dataset. Accessed 6 December 2023.
